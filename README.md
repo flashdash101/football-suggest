@@ -1,7 +1,5 @@
-# Made in React + Vite
 
-
-# This is a football scout recommender, it simply recommends players based on the categories you chose, if you want ideas for a possession minded defensive midfielder then this is the right program for you!
+## This is a football scout recommender, it simply recommends players based on the categories you chose, if you want ideas for a possession minded defensive midfielder then this is the right program for you!
 
 ### How does it work?
 - it utilizes a weighting feature system accounting for varying importances of statistics across different playing positions and styles
