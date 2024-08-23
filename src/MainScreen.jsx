@@ -124,8 +124,36 @@ const MainScreen = ({ selectedOption, selectedSecondOption, playingStyle }) => {
 
   const toggleView = () => setShowChart(!showChart);
 
-  if (isLoading) return <div>Loading recommendations...</div>;
-  if (isError) return <div>Error: {error.message}</div>;
+  const [loadingTime, setLoadingTime] = useState(0);
+
+
+  useEffect(() => {
+    if (isLoading) {
+      const startTime = performance.now();
+
+      const interval = setInterval(() => {
+        const currentTime = performance.now();
+        const elapsedTime = currentTime - startTime;
+
+        if (elapsedTime > 1200) {
+          setLoadingTime(elapsedTime);
+          clearInterval(interval);
+        }
+      }, 100);
+    }
+  }, [isLoading]);
+  if (isLoading && loadingTime > 1200) {
+    return <div>API is waking up....</div>;
+  }
+
+  if (isLoading) {
+    return <div>Loading recommendations...</div>;
+  }
+
+  if (isError) {
+    return <div>Error: {error.message}</div>;
+  }
+
   if (!recommendations || recommendations.length === 0) {
     return <div>No recommendations available.</div>;
   }
