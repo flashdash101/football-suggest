@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { debounce } from 'lodash';
 import PlayerCard from './PlayerCard';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Radar, RadarChart, PolarGrid, Legend, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
@@ -20,7 +19,7 @@ const MainScreen = ({ selectedOption, selectedSecondOption, playingStyle }) => {
 
   const fetchRecommendations = async ({ category, subcategory, playingStyle }) => {
     console.log("Attempting to fetch recommendations...");
-    const response = await axios.post('https://football-suggest3-mkj3ly2lna-nw.a.run.app/get_recommendations', {
+    const response = await axios.post('https://football-suggest-638879485340.europe-central2.run.app/get_recommendations', {
       category,
       subcategory,
       min_minutes: 0,
