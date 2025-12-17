@@ -182,139 +182,155 @@ class AdvancedPlayerRecommender:
         if len(filtered_data) < num_recommendations:
             raise ValueError(f"Not enough players ({len(filtered_data)}) meet the criteria.")
 
+        # Per-90 view for percentile-based filters
+        per90_cols = ['xG', 'Gls', 'SoT', 'xA', 'Ast', 'KP', 'Carries', 'Succ', 'PrgC', 'Cmp', 'Touches', 'Tkl', 'Int', 'Tkl+Int', 'Att 3rd', 'Mid 3rd']
+        per90 = filtered_data[per90_cols].div(filtered_data['90s'], axis=0).replace([np.inf, -np.inf], np.nan).fillna(0)
+
         # PRE-FILTER by playing style thresholds to ensure quality matches
         initial_count = len(filtered_data)
         
         if playing_style == 'Goal Threat':
             # Strict: High goal threat required
-            goal_mask = (filtered_data['xG'] >= np.percentile(filtered_data['xG'], 90)) & (filtered_data['Gls'] >= np.percentile(filtered_data['Gls'], 90)) | (filtered_data['xG'] >= np.percentile(filtered_data['xG'], 90)) & (filtered_data['SoT'] >= np.percentile(filtered_data['SoT'], 90))
+            xg_q90, gls_q90, sot_q90 = per90['xG'].quantile(0.9), per90['Gls'].quantile(0.9), per90['SoT'].quantile(0.9)
+            xg_q70, gls_q70, sot_q70 = per90['xG'].quantile(0.7), per90['Gls'].quantile(0.7), per90['SoT'].quantile(0.7)
+            xg_q60, gls_q60, sot_q60 = per90['xG'].quantile(0.6), per90['Gls'].quantile(0.6), per90['SoT'].quantile(0.6)
+
+            goal_mask = ((per90['xG'] >= xg_q90) & (per90['Gls'] >= gls_q90)) | ((per90['xG'] >= xg_q90) & (per90['SoT'] >= sot_q90))
             temp_filtered = filtered_data[goal_mask]
-            
+
             if len(temp_filtered) >= num_recommendations:
                 filtered_data = temp_filtered
-                print(f"Goal Threat filter: {len(filtered_data)} players with xG >= 11.0 AND Goals >= 15 OR xG >= 12.0 AND SoT >= 30")
+                print(f"Goal Threat filter (90th pct per90): {len(filtered_data)}")
             else:
-                # Medium threshold
-                goal_mask = (filtered_data['xG'] >= 6.0) & (filtered_data['Gls'] >= 8) | (filtered_data['xG'] >= 7.0) & (filtered_data['SoT'] >= 15)
+                goal_mask = ((per90['xG'] >= xg_q70) & (per90['Gls'] >= gls_q70)) | ((per90['xG'] >= xg_q70) & (per90['SoT'] >= sot_q70))
                 temp_filtered = filtered_data[goal_mask]
-                
+
                 if len(temp_filtered) >= num_recommendations:
                     filtered_data = temp_filtered
-                    print(f"Goal Threat filter (relaxed): {len(filtered_data)} players with xG >= 6.0 AND Goals >= 8 OR xG >= 7.0 AND SoT >= 15")
+                    print(f"Goal Threat filter (70th pct per90): {len(filtered_data)}")
                 else:
-                    # Minimum threshold
-                    goal_mask = (filtered_data['xG'] >= 3) | (filtered_data['Gls'] >= 3)
+                    goal_mask = ((per90['xG'] >= xg_q60) | (per90['Gls'] >= gls_q60) | (per90['SoT'] >= sot_q60))
                     filtered_data = filtered_data[goal_mask]
-                    print(f"Goal Threat filter (minimum): {len(filtered_data)} players with xG >= 3 OR Goals >= 3")
+                    print(f"Goal Threat filter (60th pct per90): {len(filtered_data)}")
     
         elif playing_style == 'Creative':
-            # Strict: High creativity required (AND condition for better quality)
-            creative_mask = (filtered_data['xA'] >= 6.0) & (filtered_data['Ast'] >= 6) | (filtered_data['xA'] >= 6.0) | (filtered_data['KP'] >= 25)
+            xa_q90, ast_q90, kp_q90 = per90['xA'].quantile(0.9), per90['Ast'].quantile(0.9), per90['KP'].quantile(0.9)
+            xa_q70, ast_q70, kp_q70 = per90['xA'].quantile(0.7), per90['Ast'].quantile(0.7), per90['KP'].quantile(0.7)
+            xa_q60, ast_q60, kp_q60 = per90['xA'].quantile(0.6), per90['Ast'].quantile(0.6), per90['KP'].quantile(0.6)
+
+            creative_mask = ((per90['xA'] >= xa_q90) & (per90['Ast'] >= ast_q90)) | (per90['xA'] >= xa_q90) | (per90['KP'] >= kp_q90)
             temp_filtered = filtered_data[creative_mask]
             
             if len(temp_filtered) >= num_recommendations:
                 filtered_data = temp_filtered
-                print(f"Creative filter: {len(filtered_data)} players with (xA >= 6.0 AND Assists >= 6) OR xA >= 6.0 OR KP >= 25")
+                print(f"Creative filter (90th pct per90): {len(filtered_data)}")
             else:
-                # Medium threshold - still require good creativity
-                creative_mask = (filtered_data['xA'] >= 4.0) & (filtered_data['Ast'] >= 5) | (filtered_data['xA'] >= 3.5) & (filtered_data['KP'] >= 18)
+                creative_mask = ((per90['xA'] >= xa_q70) & (per90['Ast'] >= ast_q70)) | ((per90['xA'] >= xa_q70) & (per90['KP'] >= kp_q70))
                 temp_filtered = filtered_data[creative_mask]
                 
                 if len(temp_filtered) >= num_recommendations:
                     filtered_data = temp_filtered
-                    print(f"Creative filter (relaxed): {len(filtered_data)} players with xA >= 3.0 AND Assists >= 5 OR xA >= 3.5 AND KP >= 18")
+                    print(f"Creative filter (70th pct per90): {len(filtered_data)}")
                 else:
-                    # Minimum threshold
-                    creative_mask = (filtered_data['xA'] >= 2.0) | (filtered_data['Ast'] >= 3)
+                    creative_mask = (per90['xA'] >= xa_q60) | (per90['Ast'] >= ast_q60) | (per90['KP'] >= kp_q60)
                     filtered_data = filtered_data[creative_mask]
-                    print(f"Creative filter (minimum): {len(filtered_data)} players with xA >= 2.0 OR Assists >= 3")
+                    print(f"Creative filter (60th pct per90): {len(filtered_data)}")
 
         elif playing_style == 'Dribbling':
             # Focus on high-volume ball carriers
-            dribble_mask = ((filtered_data['Carries'] >= 180) & (filtered_data['Succ'] >= 60)) | (filtered_data['PrgC'] >= 85)
+            car_q90, suc_q90, prgc_q90 = per90['Carries'].quantile(0.9), per90['Succ'].quantile(0.9), per90['PrgC'].quantile(0.9)
+            car_q70, suc_q70, prgc_q70 = per90['Carries'].quantile(0.7), per90['Succ'].quantile(0.7), per90['PrgC'].quantile(0.7)
+            car_q60, suc_q60, prgc_q60 = per90['Carries'].quantile(0.6), per90['Succ'].quantile(0.6), per90['PrgC'].quantile(0.6)
+
+            dribble_mask = ((per90['Carries'] >= car_q90) & (per90['Succ'] >= suc_q90)) | (per90['PrgC'] >= prgc_q90)
             temp_filtered = filtered_data[dribble_mask]
 
             if len(temp_filtered) >= num_recommendations:
                 filtered_data = temp_filtered
-                print(f"Dribbling filter: {len(filtered_data)} players with Carries >= 180 & Succ >= 60 OR PrgC >= 85")
+                print(f"Dribbling filter (90th pct per90): {len(filtered_data)}")
             else:
-                # Medium threshold
-                dribble_mask = ((filtered_data['Carries'] >= 130) & (filtered_data['Succ'] >= 50)) | (filtered_data['PrgC'] >= 60)
+                dribble_mask = ((per90['Carries'] >= car_q70) & (per90['Succ'] >= suc_q70)) | (per90['PrgC'] >= prgc_q70)
                 temp_filtered = filtered_data[dribble_mask]
 
                 if len(temp_filtered) >= num_recommendations:
                     filtered_data = temp_filtered
-                    print(f"Dribbling filter (relaxed): {len(filtered_data)} players with Carries >= 130 & Succ >= 50 OR PrgC >= 60")
+                    print(f"Dribbling filter (70th pct per90): {len(filtered_data)}")
                 else:
-                    dribble_mask = (filtered_data['Carries'] >= 100) | (filtered_data['Succ'] >= 40)
+                    dribble_mask = (per90['Carries'] >= car_q60) | (per90['Succ'] >= suc_q60) | (per90['PrgC'] >= prgc_q60)
                     filtered_data = filtered_data[dribble_mask]
-                    print(f"Dribbling filter (minimum): {len(filtered_data)} players with Carries >= 100 OR Succ >= 40")
+                    print(f"Dribbling filter (60th pct per90): {len(filtered_data)}")
         
         elif playing_style == 'Possession':
             # Strict: High passing volume and accuracy
-            possession_mask = (filtered_data['Cmp'] >= 1200) & (filtered_data['Cmp%'] >= 85) | (filtered_data['Touches'] >= 1800)
+            cmp_q90, toc_q90 = per90['Cmp'].quantile(0.9), per90['Touches'].quantile(0.9)
+            cmp_q70, toc_q70 = per90['Cmp'].quantile(0.7), per90['Touches'].quantile(0.7)
+            cmp_q60, toc_q60 = per90['Cmp'].quantile(0.6), per90['Touches'].quantile(0.6)
+
+            possession_mask = ((per90['Cmp'] >= cmp_q90) | (per90['Touches'] >= toc_q90))
             temp_filtered = filtered_data[possession_mask]
             
             if len(temp_filtered) >= num_recommendations:
                 filtered_data = temp_filtered
-                print(f"Possession filter: {len(filtered_data)} players with Cmp >= 1200 & Cmp% >= 85 OR Touches >= 1800")
+                print(f"Possession filter (90th pct per90): {len(filtered_data)}")
             else:
-                # Medium threshold
-                possession_mask = (filtered_data['Cmp'] >= 800) | (filtered_data['Touches'] >= 1400)
+                possession_mask = ((per90['Cmp'] >= cmp_q70) | (per90['Touches'] >= toc_q70))
                 temp_filtered = filtered_data[possession_mask]
                 
                 if len(temp_filtered) >= num_recommendations:
                     filtered_data = temp_filtered
-                    print(f"Possession filter (relaxed): {len(filtered_data)} players with Cmp >= 800 OR Touches >= 1400")
+                    print(f"Possession filter (70th pct per90): {len(filtered_data)}")
                 else:
-                    # Minimum threshold
-                    possession_mask = (filtered_data['Cmp'] >= 500) | (filtered_data['Touches'] >= 1000)
+                    possession_mask = ((per90['Cmp'] >= cmp_q60) | (per90['Touches'] >= toc_q60))
                     filtered_data = filtered_data[possession_mask]
-                    print(f"Possession filter (minimum): {len(filtered_data)} players with Cmp >= 500 OR Touches >= 1000")
+                    print(f"Possession filter (60th pct per90): {len(filtered_data)}")
         
         elif playing_style == 'High-Press':
             # Strict: High pressing and recovery in final third
-            press_mask = (filtered_data['Tkl'] >= 40) & (filtered_data['Att 3rd'] >= 15) | (filtered_data['Tkl+Int'] >= 70)
+            tkl_q90, att3_q90, tki_q90 = per90['Tkl'].quantile(0.9), per90['Att 3rd'].quantile(0.9), per90['Tkl+Int'].quantile(0.9)
+            tkl_q70, att3_q70, tki_q70 = per90['Tkl'].quantile(0.7), per90['Att 3rd'].quantile(0.7), per90['Tkl+Int'].quantile(0.7)
+            tkl_q60, att3_q60, tki_q60 = per90['Tkl'].quantile(0.6), per90['Att 3rd'].quantile(0.6), per90['Tkl+Int'].quantile(0.6)
+
+            press_mask = ((per90['Tkl'] >= tkl_q90) & (per90['Att 3rd'] >= att3_q90)) | (per90['Tkl+Int'] >= tki_q90)
             temp_filtered = filtered_data[press_mask]
             
             if len(temp_filtered) >= num_recommendations:
                 filtered_data = temp_filtered
-                print(f"High-Press filter: {len(filtered_data)} players with Tkl >= 40 & Att 3rd >= 15 OR Tkl+Int >= 70")
+                print(f"High-Press filter (90th pct per90): {len(filtered_data)}")
             else:
-                # Medium threshold
-                press_mask = (filtered_data['Tkl'] >= 25) | (filtered_data['Tkl+Int'] >= 50)
+                press_mask = ((per90['Tkl'] >= tkl_q70) & (per90['Att 3rd'] >= att3_q70)) | (per90['Tkl+Int'] >= tki_q70)
                 temp_filtered = filtered_data[press_mask]
                 
                 if len(temp_filtered) >= num_recommendations:
                     filtered_data = temp_filtered
-                    print(f"High-Press filter (relaxed): {len(filtered_data)} players with Tkl >= 25 OR Tkl+Int >= 50")
+                    print(f"High-Press filter (70th pct per90): {len(filtered_data)}")
                 else:
-                    # Minimum threshold
-                    press_mask = (filtered_data['Tkl'] >= 15) | (filtered_data['Tkl+Int'] >= 35)
+                    press_mask = (per90['Tkl'] >= tkl_q60) | (per90['Tkl+Int'] >= tki_q60)
                     filtered_data = filtered_data[press_mask]
-                    print(f"High-Press filter (minimum): {len(filtered_data)} players with Tkl >= 15 OR Tkl+Int >= 35")
+                    print(f"High-Press filter (60th pct per90): {len(filtered_data)}")
         
         elif playing_style == 'Defensive':
             # Strict: High defensive actions
-            defensive_mask = (filtered_data['Tkl'] >= 50) & (filtered_data['Int'] >= 30) | (filtered_data['Tkl+Int'] >= 80)
+            tkl_q90, int_q90, tki_q90 = per90['Tkl'].quantile(0.9), per90['Int'].quantile(0.9), per90['Tkl+Int'].quantile(0.9)
+            tkl_q70, int_q70, tki_q70 = per90['Tkl'].quantile(0.7), per90['Int'].quantile(0.7), per90['Tkl+Int'].quantile(0.7)
+            tkl_q60, int_q60, tki_q60 = per90['Tkl'].quantile(0.6), per90['Int'].quantile(0.6), per90['Tkl+Int'].quantile(0.6)
+
+            defensive_mask = ((per90['Tkl'] >= tkl_q90) & (per90['Int'] >= int_q90)) | (per90['Tkl+Int'] >= tki_q90)
             temp_filtered = filtered_data[defensive_mask]
             
             if len(temp_filtered) >= num_recommendations:
                 filtered_data = temp_filtered
-                print(f"Defensive filter: {len(filtered_data)} players with Tkl >= 50 & Int >= 30 OR Tkl+Int >= 80")
+                print(f"Defensive filter (90th pct per90): {len(filtered_data)}")
             else:
-                # Medium threshold
-                defensive_mask = (filtered_data['Tkl'] >= 35) | (filtered_data['Int'] >= 25) | (filtered_data['Tkl+Int'] >= 60)
+                defensive_mask = ((per90['Tkl'] >= tkl_q70) & (per90['Int'] >= int_q70)) | (per90['Tkl+Int'] >= tki_q70)
                 temp_filtered = filtered_data[defensive_mask]
                 
                 if len(temp_filtered) >= num_recommendations:
                     filtered_data = temp_filtered
-                    print(f"Defensive filter (relaxed): {len(filtered_data)} players with Tkl >= 35 OR Int >= 25 OR Tkl+Int >= 60")
+                    print(f"Defensive filter (70th pct per90): {len(filtered_data)}")
                 else:
-                    # Minimum threshold
-                    defensive_mask = (filtered_data['Tkl'] >= 20) | (filtered_data['Int'] >= 15)
+                    defensive_mask = (per90['Tkl'] >= tkl_q60) | (per90['Int'] >= int_q60) | (per90['Tkl+Int'] >= tki_q60)
                     filtered_data = filtered_data[defensive_mask]
-                    print(f"Defensive filter (minimum): {len(filtered_data)} players with Tkl >= 20 OR Int >= 15")
+                    print(f"Defensive filter (60th pct per90): {len(filtered_data)}")
         
         if len(filtered_data) < num_recommendations:
             raise ValueError(f"Not enough players meet the {playing_style} criteria. Found {len(filtered_data)}, need {num_recommendations}.")
