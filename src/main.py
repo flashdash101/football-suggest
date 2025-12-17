@@ -23,9 +23,19 @@ async def root():
     return {"status": "ok"}
 
 
+@app.head("/")
+async def root_head():
+    return
+
+
 @app.get("/healthz")
 async def healthz():
     return {"status": "ok"}
+
+
+@app.head("/healthz")
+async def healthz_head():
+    return
 
 subcategory_mapping = {
     'Fullback': 'FB',
