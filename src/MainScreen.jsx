@@ -8,6 +8,8 @@ const MainScreen = ({ selectedOption, selectedSecondOption, playingStyle, onBack
   const [showChart, setShowChart] = useState(false);
   const queryClient = useQueryClient();
 
+  const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+
   const { data: recommendationsData, isLoading, isError, error } = useQuery({
     queryKey: ['recommendations', selectedOption, selectedSecondOption, playingStyle],
     queryFn: () => fetchRecommendations({ category: selectedOption, subcategory: selectedSecondOption, playingStyle }),
@@ -20,7 +22,7 @@ const MainScreen = ({ selectedOption, selectedSecondOption, playingStyle, onBack
 
   const fetchRecommendations = async ({ category, subcategory, playingStyle }) => {
     console.log("Attempting to fetch recommendations...");
-    const response = await axios.post('http://localhost:8000/get_recommendations', {
+    const response = await axios.post(`${API_BASE_URL}/get_recommendations`, {
       category,
       subcategory,
       min_minutes: 0,

@@ -17,6 +17,16 @@ app.add_middleware(
 
 recommender = AdvancedPlayerRecommender(player_data)
 
+
+@app.get("/")
+async def root():
+    return {"status": "ok"}
+
+
+@app.get("/healthz")
+async def healthz():
+    return {"status": "ok"}
+
 subcategory_mapping = {
     'Fullback': 'FB',
     'Wingback': 'WB',
@@ -31,13 +41,14 @@ subcategory_mapping = {
 @app.post("/get_recommendations", response_model=RecommendationResponse)
 async def get_recommendations(request: RecommendationRequest):
     try:
-        mapped_subcategory = subcategory_mapping.get(request.subcategory, request.subcategory)
+        subcategory = request.subcategory or None
+        mapped_subcategory = subcategory_mapping.get(subcategory, subcategory)
         recs = recommender.get_recommendations_monte_carlo(
             request.category,
             mapped_subcategory,
             request.num_recommendations,
             distance_metric='cosine',
-            playing_style=request.playing_style
+            playing_style=request.playing_style or 'No Style'
         )
         return RecommendationResponse(
             recommendations=[
@@ -70,7 +81,7 @@ async def get_recommendations(request: RecommendationRequest):
                         minutes_played=rec.get('90s') * 90 if rec.get('90s') is not None else None
                         
                     )
-                ) for rec in recs
+                ) for rec in (recs or [])
             ]
         )
     except ValueError as e:
