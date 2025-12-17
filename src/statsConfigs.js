@@ -1,12 +1,12 @@
 export const positionStats = {
-  CB: ["Tkl", "Int", "Clr", "Blocks", "Cmp", "xA", "TklW"],
-  FB: ["Tkl", "Int", "Cmp", "PrgC", "PrgP", "Ast", "Clr"],
-  WB: ["Tkl", "Int", "PrgC", "PrgP", "Ast", "Clr"],
-  DM: ["Tkl", "Int", "PrgP", "Cmp", "Blocks", "xA", "Ast", "KP"],
-  CM: ["Cmp", "PrgP", "Ast", "KP", "Tkl", "Int", "xA"],
-  AM: ["Ast", "KP", "xA", "PrgP", "Gls", "xG", "Cmp", "PrgC"],
+  CB: ["Gls", "Tkl", "Int", "Clr", "Blocks", "Cmp", "xA", "TklW"],
+  FB: ["Gls", "Tkl", "Int", "Cmp", "PrgC", "PrgP", "Ast", "Clr"],
+  WB: ["Gls", "Tkl", "Int", "PrgC", "PrgP", "Ast", "Clr"],
+  DM: ["Gls", "Tkl", "Int", "PrgP", "Cmp", "Blocks", "xA", "Ast", "KP"],
+  CM: ["Gls", "Cmp", "PrgP", "Ast", "KP", "Tkl", "Int", "xA"],
+  AM: ["Gls", "Ast", "KP", "xA", "PrgP", "xG", "Cmp", "PrgC"],
   ST: ["Gls", "xG", "Sh", "SoT", "Ast", "xA"],
-  W: ["Ast", "xA", "PrgC", "Gls", "xG", "onethird", "CPA", "Att", "Succ"],
+  W: ["Gls", "Ast", "xA", "PrgC", "xG", "onethird", "CPA", "Att", "Succ"],
 };
 
 export const positionMapping = {

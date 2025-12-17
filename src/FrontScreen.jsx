@@ -13,8 +13,8 @@ const FrontScreen = () => {
 
   const DefenderValues = ['Fullback', 'Wingback', 'Centreback'];
   const MidfielderValues = ['Defensive Midfielder', 'Central Midfielder', 'Attacking Midfielder'];
-  const StrikerValues = ['Winger', 'Centre-Forward'];
-  const playingStyles = ['Possession', 'Counter-Attack', 'High-Press', 'Target-Man', 'Defensive','No Style'];
+  const StrikerValues = ['Winger', 'Attacker'];
+  const playingStyles = ['Possession', 'Creative', 'Dribbling', 'Goal Threat', 'High-Press', 'Defensive', 'No Style'];
 
   const handleSelectChange = (e) => {
     
@@ -54,7 +54,8 @@ const FrontScreen = () => {
   if (showMainScreen) {
     return <MainScreen selectedOption={selectedOption}
       selectedSecondOption={selectedSecondOption}
-    playingStyle={playingStyle}/>;
+      playingStyle={playingStyle}
+      onBack={() => setShowMainScreen(false)} />;
   }
 
 

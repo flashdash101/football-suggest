@@ -9,7 +9,7 @@ app = FastAPI()
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Adjust this to your React app's URL
+    allow_origins=["*"],  #Allow all origins for simplicity; adjust as needed for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -25,7 +25,7 @@ subcategory_mapping = {
     'Central Midfielder': 'CM',
     'Attacking Midfielder': 'AM',
     'Winger': 'W',
-    'Centre-Forward': 'ST'
+    'Attacker': 'ST'
 }
 
 @app.post("/get_recommendations", response_model=RecommendationResponse)
@@ -36,7 +36,7 @@ async def get_recommendations(request: RecommendationRequest):
             request.category,
             mapped_subcategory,
             request.num_recommendations,
-            distance_metric='pearson',
+            distance_metric='cosine',
             playing_style=request.playing_style
         )
         return RecommendationResponse(

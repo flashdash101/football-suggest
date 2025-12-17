@@ -4,8 +4,9 @@ import PlayerCard from './PlayerCard';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Radar, RadarChart, PolarGrid, Legend, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { positionStats, statNames, positionMapping, defaultPositionStats } from './statsConfigs';
-const MainScreen = ({ selectedOption, selectedSecondOption, playingStyle }) => {
+const MainScreen = ({ selectedOption, selectedSecondOption, playingStyle, onBack }) => {
   const [showChart, setShowChart] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: recommendationsData, isLoading, isError, error } = useQuery({
     queryKey: ['recommendations', selectedOption, selectedSecondOption, playingStyle],
@@ -19,7 +20,7 @@ const MainScreen = ({ selectedOption, selectedSecondOption, playingStyle }) => {
 
   const fetchRecommendations = async ({ category, subcategory, playingStyle }) => {
     console.log("Attempting to fetch recommendations...");
-    const response = await axios.post('https://football-suggest-638879485340.europe-central2.run.app/get_recommendations', {
+    const response = await axios.post('http://localhost:8000/get_recommendations', {
       category,
       subcategory,
       min_minutes: 0,
@@ -29,6 +30,10 @@ const MainScreen = ({ selectedOption, selectedSecondOption, playingStyle }) => {
     console.log("Received recommendations!");
     console.log('API Response:', response.data);
     return response.data;
+  };
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries(['recommendations', selectedOption, selectedSecondOption, playingStyle]);
   };
 
 
@@ -169,9 +174,26 @@ const MainScreen = ({ selectedOption, selectedSecondOption, playingStyle }) => {
 
   return (
     <div className="main-screen">
-      <button onClick={toggleView}>
-        {showChart ? 'Show Player Cards' : 'Show Radar Chart'}
-      </button>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <span>←</span> Back
+        </button>
+        <button onClick={toggleView}>
+          {showChart ? 'Show Player Cards' : 'Show Radar Chart'}
+        </button>
+        <button 
+          onClick={handleRefresh} 
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '5px',
+            cursor: 'pointer'
+          }}
+          title="Refresh recommendations"
+        >
+          <span style={{ fontSize: '18px' }}>↻</span> Refresh
+        </button>
+      </div>
       {showChart ? (
         <ResponsiveContainer width="100%" height={600} minHeight={600} minWidth={600}>
           <RadarChart outerRadius="70%" data={prepareChartData()}>

@@ -29,10 +29,10 @@ class AdvancedPlayerRecommender:
         }
         
         self.playing_styles = {
-            'Possession': {'Cmp': 1.7, 'PrgP': 1.6, 'KP': 1.4, 'Touches' : 1.6, 'TB' : 1.6},
-            'Counter-Attack': {'PrgP': 1.2, 'PrgC': 1.5, 'Ast': 1.3, 'xA': 1.1},
-            'High-Press': {'Tkl': 1.8, 'Int': 1.5, 'PrgP': 1.1, 'Att 3rd': 1.7, 'Mid 3rd' : 1.9},
-            'Target-Man': {'Gls': 1.2, 'xG': 1.2, 'Sh': 1.1, 'SoT': 1.1},
+            'Possession': {'Cmp': 1.7, 'PrgP': 1.6, 'KP': 1.4, 'Touches': 1.6, 'Cmp%': 1.5, 'TotDist': 1.3},
+            'Creative': {'Ast': 1.8, 'xA': 1.9, 'KP': 1.8, 'PrgC': 1.6, 'PrgP': 1.4, 'onethird': 1.5, 'CPA': 1.6},
+            'Goal Threat': {'Gls': 2.0, 'xG': 1.8, 'SoT': 1.6, 'SoT%': 1.7, 'Sh': 1.4, 'G/SoT': 1.5},
+            'High-Press': {'Tkl': 1.8, 'Int': 1.5, 'PrgP': 1.1, 'Att 3rd': 1.7, 'Mid 3rd': 1.9, 'TklW': 1.6},
             'Defensive': {'Tkl': 1.6, 'Int': 1.7, 'Blocks': 1.3, 'Clr': 1.2, 'TklW': 1.6, 'Def 3rd': 1.6},
             'No Style': {}
         }
@@ -203,34 +203,39 @@ class AdvancedPlayerRecommender:
             normalized_stats *= feature_weights
         # Add random noise to simulate performance variability
 
-        # Monte Carlo simulation
-        similarity_sums = np.zeros((len(filtered_data), len(filtered_data)))
+        # Calculate the centroid (ideal player) for this role/style combination
+        centroid = normalized_stats.mean(axis=0).reshape(1, -1)
+        
+        # Monte Carlo simulation comparing each player to the centroid
+        similarity_sums = np.zeros(len(filtered_data))
         for _ in range(num_simulations):
             # Add random noise to simulate performance variability
             noisy_stats = normalized_stats + np.random.normal(0, 0.1, normalized_stats.shape)
+            noisy_centroid = centroid + np.random.normal(0, 0.1, centroid.shape)
             
-            # Calculate similarities using the specified distance metric
-            similarities = self.distance_metrics[distance_metric](noisy_stats)
-            similarity_sums += similarities
+            # Calculate similarities between all players and the centroid
+            combined_stats = np.vstack([noisy_centroid, noisy_stats])
+            similarity_matrix = self.distance_metrics[distance_metric](combined_stats)
+            
+            # First row contains centroid's similarity to all players
+            centroid_similarities = similarity_matrix[0, 1:]
+            similarity_sums += centroid_similarities
 
         # Average similarities over all simulations
         avg_similarities = similarity_sums / num_simulations
         
-        randomness_factor = np.random.uniform(0.85, 1.05, avg_similarities.shape)
-        avg_similarities *= randomness_factor
-
-        # Get top similar players (excluding self-similarity)
-        top_similar_indices = avg_similarities.argsort()[:, ::-1][:, 1:num_recommendations+1]
+        # Get top similar players to the ideal centroid
+        top_similar_indices = avg_similarities.argsort()[::-1][:num_recommendations]
         
         recommendations = []
-        for idx in top_similar_indices[0]:
+        for idx in top_similar_indices:
             player_data = filtered_data.iloc[idx]
             recommendations.append({
                 'Player': player_data['Player'],
                 'Pos': player_data['Pos'],
                 'Club': player_data['Club'],
-                'Similarity': avg_similarities[0, idx],
-                'SimilarityStd': np.std(similarity_sums[0, idx] / num_simulations),
+                'Similarity': avg_similarities[idx],
+                'SimilarityStd': np.std(similarity_sums[idx] / num_simulations),
                 **{stat: player_data[stat] for stat in all_stats}
             })
 

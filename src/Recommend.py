@@ -1,4 +1,3 @@
-
 import numpy as np
 import pandas as pd
 import random
@@ -29,10 +28,11 @@ class AdvancedPlayerRecommender:
         }
         
         self.playing_styles = {
-            'Possession': {'Cmp': 1.7, 'PrgP': 1.6, 'KP': 1.4, 'Touches' : 1.6, 'TB' : 1.6},
-            'Counter-Attack': {'PrgP': 1.2, 'PrgC': 1.5, 'Ast': 1.3, 'xA': 1.1},
-            'High-Press': {'Tkl': 1.8, 'Int': 1.5, 'PrgP': 1.1, 'Att 3rd': 1.7, 'Mid 3rd' : 1.9},
-            'Target-Man': {'Gls': 1.2, 'xG': 1.2, 'Sh': 1.1, 'SoT': 1.1},
+            'Possession': {'Cmp': 1.7, 'PrgP': 1.6, 'KP': 1.4, 'Touches': 1.6, 'Cmp%': 1.5, 'TotDist': 1.3},
+            'Creative': {'xA': 2.0, 'KP': 1.9, 'Ast': 1.8, 'PPA': 1.7, 'CPA': 1.6, 'PrgP': 1.4, 'CrsPA': 1.3, 'PrgC': 1.1},
+            'Goal Threat': {'Gls': 2.0, 'xG': 1.8, 'SoT': 1.6, 'SoT%': 1.7, 'Sh': 1.4, 'G/SoT': 1.5},
+            'Dribbling': {'Carries': 1.9, 'PrgC': 1.7, 'Succ': 1.5, 'CPA': 1.3, 'Touches': 1.2,},
+            'High-Press': {'Tkl': 1.8, 'Int': 1.5, 'PrgP': 1.1, 'Att 3rd': 1.7, 'Mid 3rd': 1.9, 'TklW': 1.6},
             'Defensive': {'Tkl': 1.6, 'Int': 1.7, 'Blocks': 1.3, 'Clr': 1.2, 'TklW': 1.6, 'Def 3rd': 1.6},
             'No Style': {}
         }
@@ -51,7 +51,7 @@ class AdvancedPlayerRecommender:
             'CM': { 'Cmp': 0.9,'PrgP': 0.6, 'Ast': 0.7, 'KP': 0.6, 'Tkl': 0.6, 'Int': 0.7, 'xA': 0.8, 'Cmp': 0.6},
             'AM': {'Ast': 0.7, 'KP': 0.7, 'xA': 0.8, 'PrgP': 0.7, 'Gls': 0.8, 'xG': 0.8, 'PrgC': 0.6, 'TB': 0.7},
             'ST': {'Gls': 0.9, 'xG': 0.9, 'Sh': 0.7, 'SoT': 0.8, 'Ast': 0.6, 'xA': 0.5},
-            'W': {'Ast': 0.8, 'xA': 0.9, 'PrgC': 0.8, 'Gls': 0.5, 'xG': 0.6, 'onethird': 0.8, 'Succ': 0.9, 'CPA': 0.7, 'Att': 0.9},
+            'W': {'Ast': 0.8, 'xA': 1.1, 'PrgC': 0.85, 'Gls': 0.7, 'xG': 0.85, 'onethird': 0.8, 'Succ': 0.9, 'CPA': 0.75, 'Att': 0.9},
         }
         
         self.subcategory_weights = {
@@ -62,7 +62,7 @@ class AdvancedPlayerRecommender:
             'CM': {'Cmp': 0.9, 'PrgP': 0.6, 'Ast': 0.7, 'KP': 0.6, 'Tkl': 0.6, 'Int': 0.7, 'xA': 0.8},
             'AM': {'Ast': 0.7, 'KP': 0.7, 'xA': 0.8, 'PrgP': 0.7, 'Gls': 0.8, 'xG': 0.8, 'PrgC': 0.6, 'TB': 0.7},
             'ST': {'Gls': 0.9, 'xG': 0.9, 'Sh': 0.7, 'SoT': 0.8, 'Ast': 0.6, 'xA': 0.5},
-            'W': {'Ast': 0.8, 'xA': 0.9, 'PrgC': 0.8, 'Gls': 0.5, 'xG': 0.6, 'onethird': 0.8, 'Succ': 0.9, 'CPA': 0.7, 'Att': 0.6},
+            'W': {'Ast': 0.9, 'xA': 1.1, 'PrgC': 0.85, 'Gls': 0.7, 'xG': 0.85, 'onethird': 0.8, 'Succ': 0.9, 'CPA': 0.75, 'Att': 0.6},
         }
         
         self.distance_metrics = {
@@ -182,6 +182,143 @@ class AdvancedPlayerRecommender:
         if len(filtered_data) < num_recommendations:
             raise ValueError(f"Not enough players ({len(filtered_data)}) meet the criteria.")
 
+        # PRE-FILTER by playing style thresholds to ensure quality matches
+        initial_count = len(filtered_data)
+        
+        if playing_style == 'Goal Threat':
+            # Strict: High goal threat required
+            goal_mask = (filtered_data['xG'] >= 11.0) & (filtered_data['Gls'] >= 15) | (filtered_data['xG'] >= 12.0) & (filtered_data['SoT'] >= 30)
+            temp_filtered = filtered_data[goal_mask]
+            
+            if len(temp_filtered) >= num_recommendations:
+                filtered_data = temp_filtered
+                print(f"Goal Threat filter: {len(filtered_data)} players with xG >= 11.0 AND Goals >= 15 OR xG >= 12.0 AND SoT >= 30")
+            else:
+                # Medium threshold
+                goal_mask = (filtered_data['xG'] >= 6.0) & (filtered_data['Gls'] >= 8) | (filtered_data['xG'] >= 7.0) & (filtered_data['SoT'] >= 15)
+                temp_filtered = filtered_data[goal_mask]
+                
+                if len(temp_filtered) >= num_recommendations:
+                    filtered_data = temp_filtered
+                    print(f"Goal Threat filter (relaxed): {len(filtered_data)} players with xG >= 6.0 AND Goals >= 8 OR xG >= 7.0 AND SoT >= 15")
+                else:
+                    # Minimum threshold
+                    goal_mask = (filtered_data['xG'] >= 3) | (filtered_data['Gls'] >= 3)
+                    filtered_data = filtered_data[goal_mask]
+                    print(f"Goal Threat filter (minimum): {len(filtered_data)} players with xG >= 3 OR Goals >= 3")
+    
+        elif playing_style == 'Creative':
+            # Strict: High creativity required (AND condition for better quality)
+            creative_mask = (filtered_data['xA'] >= 6.0) & (filtered_data['Ast'] >= 6) | (filtered_data['xA'] >= 6.0) | (filtered_data['KP'] >= 25)
+            temp_filtered = filtered_data[creative_mask]
+            
+            if len(temp_filtered) >= num_recommendations:
+                filtered_data = temp_filtered
+                print(f"Creative filter: {len(filtered_data)} players with (xA >= 6.0 AND Assists >= 6) OR xA >= 6.0 OR KP >= 25")
+            else:
+                # Medium threshold - still require good creativity
+                creative_mask = (filtered_data['xA'] >= 4.0) & (filtered_data['Ast'] >= 5) | (filtered_data['xA'] >= 3.5) & (filtered_data['KP'] >= 18)
+                temp_filtered = filtered_data[creative_mask]
+                
+                if len(temp_filtered) >= num_recommendations:
+                    filtered_data = temp_filtered
+                    print(f"Creative filter (relaxed): {len(filtered_data)} players with xA >= 3.0 AND Assists >= 5 OR xA >= 3.5 AND KP >= 18")
+                else:
+                    # Minimum threshold
+                    creative_mask = (filtered_data['xA'] >= 2.0) | (filtered_data['Ast'] >= 3)
+                    filtered_data = filtered_data[creative_mask]
+                    print(f"Creative filter (minimum): {len(filtered_data)} players with xA >= 2.0 OR Assists >= 3")
+
+        elif playing_style == 'Dribbling':
+            # Focus on high-volume ball carriers
+            dribble_mask = ((filtered_data['Carries'] >= 180) & (filtered_data['Succ'] >= 60)) | (filtered_data['PrgC'] >= 85)
+            temp_filtered = filtered_data[dribble_mask]
+
+            if len(temp_filtered) >= num_recommendations:
+                filtered_data = temp_filtered
+                print(f"Dribbling filter: {len(filtered_data)} players with Carries >= 180 & Succ >= 60 OR PrgC >= 85")
+            else:
+                # Medium threshold
+                dribble_mask = ((filtered_data['Carries'] >= 130) & (filtered_data['Succ'] >= 50)) | (filtered_data['PrgC'] >= 60)
+                temp_filtered = filtered_data[dribble_mask]
+
+                if len(temp_filtered) >= num_recommendations:
+                    filtered_data = temp_filtered
+                    print(f"Dribbling filter (relaxed): {len(filtered_data)} players with Carries >= 130 & Succ >= 50 OR PrgC >= 60")
+                else:
+                    dribble_mask = (filtered_data['Carries'] >= 100) | (filtered_data['Succ'] >= 40)
+                    filtered_data = filtered_data[dribble_mask]
+                    print(f"Dribbling filter (minimum): {len(filtered_data)} players with Carries >= 100 OR Succ >= 40")
+        
+        elif playing_style == 'Possession':
+            # Strict: High passing volume and accuracy
+            possession_mask = (filtered_data['Cmp'] >= 1200) & (filtered_data['Cmp%'] >= 85) | (filtered_data['Touches'] >= 1800)
+            temp_filtered = filtered_data[possession_mask]
+            
+            if len(temp_filtered) >= num_recommendations:
+                filtered_data = temp_filtered
+                print(f"Possession filter: {len(filtered_data)} players with Cmp >= 1200 & Cmp% >= 85 OR Touches >= 1800")
+            else:
+                # Medium threshold
+                possession_mask = (filtered_data['Cmp'] >= 800) | (filtered_data['Touches'] >= 1400)
+                temp_filtered = filtered_data[possession_mask]
+                
+                if len(temp_filtered) >= num_recommendations:
+                    filtered_data = temp_filtered
+                    print(f"Possession filter (relaxed): {len(filtered_data)} players with Cmp >= 800 OR Touches >= 1400")
+                else:
+                    # Minimum threshold
+                    possession_mask = (filtered_data['Cmp'] >= 500) | (filtered_data['Touches'] >= 1000)
+                    filtered_data = filtered_data[possession_mask]
+                    print(f"Possession filter (minimum): {len(filtered_data)} players with Cmp >= 500 OR Touches >= 1000")
+        
+        elif playing_style == 'High-Press':
+            # Strict: High pressing and recovery in final third
+            press_mask = (filtered_data['Tkl'] >= 40) & (filtered_data['Att 3rd'] >= 15) | (filtered_data['Tkl+Int'] >= 70)
+            temp_filtered = filtered_data[press_mask]
+            
+            if len(temp_filtered) >= num_recommendations:
+                filtered_data = temp_filtered
+                print(f"High-Press filter: {len(filtered_data)} players with Tkl >= 40 & Att 3rd >= 15 OR Tkl+Int >= 70")
+            else:
+                # Medium threshold
+                press_mask = (filtered_data['Tkl'] >= 25) | (filtered_data['Tkl+Int'] >= 50)
+                temp_filtered = filtered_data[press_mask]
+                
+                if len(temp_filtered) >= num_recommendations:
+                    filtered_data = temp_filtered
+                    print(f"High-Press filter (relaxed): {len(filtered_data)} players with Tkl >= 25 OR Tkl+Int >= 50")
+                else:
+                    # Minimum threshold
+                    press_mask = (filtered_data['Tkl'] >= 15) | (filtered_data['Tkl+Int'] >= 35)
+                    filtered_data = filtered_data[press_mask]
+                    print(f"High-Press filter (minimum): {len(filtered_data)} players with Tkl >= 15 OR Tkl+Int >= 35")
+        
+        elif playing_style == 'Defensive':
+            # Strict: High defensive actions
+            defensive_mask = (filtered_data['Tkl'] >= 50) & (filtered_data['Int'] >= 30) | (filtered_data['Tkl+Int'] >= 80)
+            temp_filtered = filtered_data[defensive_mask]
+            
+            if len(temp_filtered) >= num_recommendations:
+                filtered_data = temp_filtered
+                print(f"Defensive filter: {len(filtered_data)} players with Tkl >= 50 & Int >= 30 OR Tkl+Int >= 80")
+            else:
+                # Medium threshold
+                defensive_mask = (filtered_data['Tkl'] >= 35) | (filtered_data['Int'] >= 25) | (filtered_data['Tkl+Int'] >= 60)
+                temp_filtered = filtered_data[defensive_mask]
+                
+                if len(temp_filtered) >= num_recommendations:
+                    filtered_data = temp_filtered
+                    print(f"Defensive filter (relaxed): {len(filtered_data)} players with Tkl >= 35 OR Int >= 25 OR Tkl+Int >= 60")
+                else:
+                    # Minimum threshold
+                    defensive_mask = (filtered_data['Tkl'] >= 20) | (filtered_data['Int'] >= 15)
+                    filtered_data = filtered_data[defensive_mask]
+                    print(f"Defensive filter (minimum): {len(filtered_data)} players with Tkl >= 20 OR Int >= 15")
+        
+        if len(filtered_data) < num_recommendations:
+            raise ValueError(f"Not enough players meet the {playing_style} criteria. Found {len(filtered_data)}, need {num_recommendations}.")
+
         all_stats = self.features
         
         for stat in all_stats:
@@ -196,45 +333,71 @@ class AdvancedPlayerRecommender:
 
         # Apply feature weighting
         if subcategory:
-            feature_weights = np.array([self.role_features[subcategory].get(feat, 0.1) for feat in self.features])
-            if playing_style:
-                style_weights = np.array([self.playing_styles[playing_style].get(feat, 1.0) for feat in self.features])
-                feature_weights *= style_weights
-            normalized_stats *= feature_weights
-        # Add random noise to simulate performance variability
-
-        # Monte Carlo simulation
-        similarity_sums = np.zeros((len(filtered_data), len(filtered_data)))
-        for _ in range(num_simulations):
-            # Add random noise to simulate performance variability
-            noisy_stats = normalized_stats + np.random.normal(0, 0.1, normalized_stats.shape)
+            role_weights = np.array([self.role_features[subcategory].get(feat, 1.0) for feat in self.features])
             
-            # Calculate similarities using the specified distance metric
-            similarities = self.distance_metrics[distance_metric](noisy_stats)
-            similarity_sums += similarities
+            if playing_style and playing_style != 'No Style':
+                style_bonuses = np.array([
+                    max(0, self.playing_styles[playing_style].get(feat, 1.0) - 1.0) 
+                    for feat in self.features
+                ])
+                feature_weights = role_weights + style_bonuses
+                
+                # DEBUG: Print weights for key stats
+                print(f"\n=== WEIGHTING DEBUG for {subcategory} with {playing_style} ===")
+                key_stats = ['Gls', 'xG', 'SoT', 'SoT%', 'Ast', 'xA', 'KP', 'PrgC']
+                for stat in key_stats:
+                    if stat in self.features:
+                        idx = self.features.index(stat)
+                        print(f"{stat}: role={role_weights[idx]:.2f}, bonus={style_bonuses[idx]:.2f}, total={feature_weights[idx]:.2f}")
+                print(f"==========================================\n")
+            else:
+                feature_weights = role_weights
+            
+            # Apply weights to stats
+            weighted_stats = normalized_stats * feature_weights
+            
+            # Calculate COMPOSITE SCORE instead of similarity
+            # Sum weighted stats for each player (higher = better)
+            composite_scores = weighted_stats.sum(axis=1)
+            
+            # Add controlled randomness for variety (±2-5% variation)
+            # This ensures slight variation between requests while keeping quality high
+            noise_level = 0.01 + (np.random.random() * 0.02)  # Random between 3-5%
+            noise = np.random.normal(0, noise_level, len(composite_scores))
+            composite_scores += noise
+            
+            # Get top performers by composite score (with extra buffer for randomness)
+            # Pick from top (num_recommendations * 2) to increase variety
+            top_candidates = min(num_recommendations * 2, len(composite_scores))
+            candidate_indices = composite_scores.argsort()[::-1][:top_candidates]
+            
+            # Randomly select from top candidates
+            np.random.shuffle(candidate_indices)
+            top_indices = candidate_indices[:num_recommendations]
+            
+            # Use percentile-based normalization for better score distribution
+            # This prevents huge gaps between best and worst players
+            from scipy.stats import rankdata
+            ranks = rankdata(composite_scores, method='average')
+            percentile_scores = (ranks / len(ranks))  # 0 to 1 scale
+            
+            # Scale to emphasize top performers (power transformation)
+            normalized_scores = percentile_scores ** 0.5  # Square root to compress low scores
+            
+            # Return recommendations
+            recommendations = []
+            for idx in top_indices:
+                player_data = filtered_data.iloc[idx]
+                recommendations.append({
+                    'Player': player_data['Player'],
+                    'Pos': player_data['Pos'],
+                    'Club': player_data['Club'],
+                    'Similarity': float(normalized_scores[idx]),  # Now represents performance score
+                    'SimilarityStd': 0.0,
+                    **{stat: player_data[stat] for stat in all_stats}
+                })
 
-        # Average similarities over all simulations
-        avg_similarities = similarity_sums / num_simulations
-        
-        randomness_factor = np.random.uniform(0.85, 1.05, avg_similarities.shape)
-        avg_similarities *= randomness_factor
-
-        # Get top similar players (excluding self-similarity)
-        top_similar_indices = avg_similarities.argsort()[:, ::-1][:, 1:num_recommendations+1]
-        
-        recommendations = []
-        for idx in top_similar_indices[0]:
-            player_data = filtered_data.iloc[idx]
-            recommendations.append({
-                'Player': player_data['Player'],
-                'Pos': player_data['Pos'],
-                'Club': player_data['Club'],
-                'Similarity': avg_similarities[0, idx],
-                'SimilarityStd': np.std(similarity_sums[0, idx] / num_simulations),
-                **{stat: player_data[stat] for stat in all_stats}
-            })
-
-        return recommendations
+            return recommendations
 
     def get_recommendations(self, category, subcategory=None, num_recommendations=5, min_minutes=0):
     # Filter by category
