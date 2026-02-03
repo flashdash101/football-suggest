@@ -1,37 +1,58 @@
 # Football Scout Recommender
 
-## Overview
-This Football Scout Recommender is an advanced tool designed to assist in identifying and recommending players based on specific tactical needs and playing styles. Whether you're looking for a possession-minded defensive midfielder or any other specialized role, this program provides data-driven recommendations to support your scouting process.
+### [🚀 Click here to launch the Football Scout Recommender](https://flashdash101.github.io/football-suggest/)
 
-## Features
-- **Comprehensive Database**: Analyzes data from over 1,000 professional players across top European leagues.
-- **Weighted Feature System**: Utilizes a sophisticated weighting system that accounts for the varying importance of statistics across different playing positions and styles.
-- **Flexible Player Classification**: Employs KMeans clustering for player sub-role inference, allowing for nuanced categorization of players who may not fit traditional positional stereotypes.
-- **Advanced Recommendation Algorithm**: Uses Monte Carlo simulations to generate robust and reliable player recommendations.
+## 📖 Overview
+The **Football Scout Recommender** is an advanced machine learning tool designed to make football analytics easier. It assists scouts and enthusiasts in identifying players who fit specific tactical needs and playing styles.
 
-## How It Works
-1. **Data Collection and Processing**: The system aggregates and normalizes data from various sources covering 1,000+ players.
-2. **Feature Weighting**: Different attributes are weighted based on their importance for specific roles and playing styles.
-3. **Clustering**: KMeans clustering algorithm categorizes players into sub-roles, providing a more nuanced view of player types.
-4. **Monte Carlo Simulation**: Multiple simulations are run to account for variability and provide consistent recommendations.
-5. **Results Generation**: The system outputs a list of recommended players based on the specified criteria.
+Moving beyond basic stats, this application uses unsupervised learning to uncover players who perform statistically similar to specific archetypes, whether you need a ball-playing center-back , a high-pressing forward or a really creative midfielder, we've got it all.
 
-## Usage
-You choose a main role, a sub role and a playing style and click get recommendations, it's as simple as that!
+## ✨ Key Features
 
-## Technical Details
-- **Backend**: Python
-- **Machine Learning Libraries**: scikit-learn for KMeans clustering, SHAP and Numpy
-- **Data Processing**: Pandas for data manipulation
-- **Frontend**: [React.js, JSX]
-- **API**: [FastAPI]
+*   **Massive Dataset:** Analyses over **1,000 professional players** from the **Top 5 European Leagues**, utilizing **68 distinct statistical features** (including xG, progressive carries, tackles, and successful take-ons).
+*   **Intelligent Clustering:** Utilises automated subcategory inference via **Weighted K-Means clustering**, categorizing players into **8 distinct position-specific roles** rather than generic labels.
+*   **Bias Elimination:** Engineers a percentile-based filtering system with **per-90 normalisation**. This implements tiered thresholds (90th/70th/60th percentiles) to ensure statistically robust candidate selection and eliminate "minutes played" bias.
+*   **Composite Scoring Engine:** Recommendations are generated via a complex algorithm combining:
+    *   Role-specific feature weighting (0.5–1.1×).
+    *   Additive style bonuses.
+    *   Percentile-rank normalisation.
+    *   Controlled stochastic sampling to balance recommendation quality with result diversity.
 
-## Future Enhancements
-- Integration with real-time player performance data
+## 🛠 Technical Architecture
 
+This project is built as a full-stack application with a focus on reproducibility and performance.
 
-## License
+*   **Frontend:** React (Vite) for a responsive, fast user interface.
+*   **Backend:** FastAPI (Python) deployed on Render.
+*   **Machine Learning:**
+    *   **Scikit-learn:** Used for K-Means clustering and `RobustScaler` preprocessing.
+    *   **Pandas/Numpy:** Utilized for vectorized per-90 calculations and data manipulation.
+*   **DevOps:** Docker containerisation ensures reproducible ML workflows across environments.
+
+## 🚀 How It Works
+
+1.  **Data Ingestion:** The pipeline processes raw data, performing per-90 normalisation to standardize stats regardless of game time.
+2.  **Clustering & Classification:** The ML model runs weighted K-Means to assign players to sub-roles based on their statistical output.
+3.  **User Input:** You select a **Main Role**, a **Sub Role**, and a desired **Playing Style**.
+4.  **Algorithmic Scoring:** The backend calculates a composite score based on the weighted importance of specific stats for your chosen role (e.g., passing is weighted higher for a Deep Lying Playmaker).
+5.  **Recommendation:** The system returns a list of players that statistically match your criteria, achieving sub-second response times.
+
+## 💻 Usage
+
+1.  Visit the [Live Website](https://flashdash101.github.io/football-suggest/).
+2.  Select a position (e.g., Midfielder).
+3.  Select a specific sub-role (e.g., Defensive ).
+4.  Choose a playing style (e.g., Creative).
+5.  Click **"Get Recommendations"** to see the scout report.
+
+## 🔜 Future Enhancements
+*   Integration with real-time API feeds for match-day updates.
+*   Comparison tool to visualize two players head-to-head.
+*   Historical data analysis for longitudinal performance tracking.
+
+## 📄 License
 Open Source
 
-## Contact
-Here is my email for any inquiries: adesina0202@gmail.com
+## 📧 Contact
+For inquiries regarding the engineering behind this project or collaboration opportunities, please contact:
+**adesina0202@gmail.com**
