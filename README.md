@@ -7,6 +7,19 @@ The **Football Scout Recommender** is an advanced machine learning tool designed
 
 Moving beyond basic stats, this application uses unsupervised learning to uncover players who perform statistically similar to specific archetypes, whether you need a ball-playing center-back , a high-pressing forward or a really creative midfielder, we've got it all.
 
+## 🧠 Core Algorithm
+The recommendation logic is powered by the `AdvancedPlayerRecommender` class. This Python module implements a hybrid unsupervised learning and weighted scoring system to surface player insights.
+
+**Key Technical Components:**
+*   **Weighted K-Means Clustering:** Automatically infers player sub-roles (e.g., Ball-Playing Defender vs. Stopper) based on feature density.
+*   **Percentile-Based Filtering:** Implements dynamic thresholds (90th/70th/60th percentiles) across specific metrics (xG, Progressive Carries) to enforce "Playing Style" requirements.
+*   **Monte Carlo Simulation:** Utilizes controlled stochastic sampling to ensure diversity in results while maintaining statistical relevance.
+*   **Composite Scoring:** Calculates similarity using a weighted Euclidean distance matrix adjusted for tactical preferences.
+
+[📂 **View the Algorithm Source Code**](https://github.com/flashdash101/football-suggest/blob/master/Algorithms/Recommend(1).py)
+
+
+
 ## ✨ Key Features
 
 *   **Massive Dataset:** Analyses over **1,000 professional players** from the **Top 5 European Leagues**, utilizing **68 distinct statistical features** (including xG, progressive carries, tackles, and successful take-ons).
@@ -19,6 +32,7 @@ Moving beyond basic stats, this application uses unsupervised learning to uncove
     *   Controlled stochastic sampling to balance recommendation quality with result diversity.
 
 ## 🛠 Technical Architecture
+
 
 This project is built as a full-stack application with a focus on reproducibility and performance.
 
