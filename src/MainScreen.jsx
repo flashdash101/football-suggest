@@ -8,7 +8,7 @@ const MainScreen = ({ selectedOption, selectedSecondOption, playingStyle, onBack
   const [showChart, setShowChart] = useState(false);
   const queryClient = useQueryClient();
 
-  const API_BASE_URL = ('http://localhost:8000').replace(/\/$/, '');
+  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
   useEffect(() => {
     console.log('Using API_BASE_URL:', API_BASE_URL);

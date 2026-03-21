@@ -1,13 +1,13 @@
 # Football Scout Recommender
 
-### [🚀 Click here to launch the Football Scout Recommender](https://flashdash101.github.io/football-suggest/)
+### [ Click here to launch the Football Scout Recommender](https://flashdash101.github.io/football-suggest/)
 
 ## 📖 Overview
 The **Football Scout Recommender** is an advanced machine learning tool designed to make football analytics easier. It assists scouts and enthusiasts in identifying players who fit specific tactical needs and playing styles.
 
 Moving beyond basic stats, this application uses unsupervised learning to uncover players who perform statistically similar to specific archetypes, whether you need a ball-playing center-back , a high-pressing forward or a really creative midfielder, we've got it all.
 
-## 🧠 Core Algorithm
+##  Core Algorithm
 The recommendation logic is powered by the `AdvancedPlayerRecommender` class. This Python module implements a hybrid unsupervised learning and weighted scoring system to surface player insights.
 
 **Key Technical Components:**
@@ -16,11 +16,11 @@ The recommendation logic is powered by the `AdvancedPlayerRecommender` class. Th
 *   **Monte Carlo Simulation:** Utilizes controlled stochastic sampling to ensure diversity in results while maintaining statistical relevance.
 *   **Composite Scoring:** Calculates similarity using a weighted Euclidean distance matrix adjusted for tactical preferences.
 
-[📂 **View the Algorithm Source Code**](https://github.com/flashdash101/football-suggest/blob/master/Algorithms/Recommend(1).py)
+[ **View the Algorithm Source Code**](https://github.com/flashdash101/football-suggest/blob/master/Algorithms/Recommend(1).py)
 
 
 
-## ✨ Key Features
+##  Key Features
 
 *   **Massive Dataset:** Analyses over **1,000 professional players** from the **Top 5 European Leagues**, utilizing **68 distinct statistical features** (including xG, progressive carries, tackles, and successful take-ons).
 *   **Intelligent Clustering:** Utilises automated subcategory inference via **Weighted K-Means clustering**, categorizing players into **8 distinct position-specific roles** rather than generic labels.
@@ -31,7 +31,7 @@ The recommendation logic is powered by the `AdvancedPlayerRecommender` class. Th
     *   Percentile-rank normalisation.
     *   Controlled stochastic sampling to balance recommendation quality with result diversity.
 
-## 🛠 Technical Architecture
+##  Technical Architecture
 
 
 This project is built as a full-stack application with a focus on reproducibility and performance.
@@ -43,7 +43,7 @@ This project is built as a full-stack application with a focus on reproducibilit
     *   **Pandas/Numpy:** Utilized for vectorized per-90 calculations and data manipulation.
 *   **DevOps:** Docker containerisation ensures reproducible ML workflows across environments.
 
-## 🚀 How It Works
+##  How It Works
 
 1.  **Data Ingestion:** The pipeline processes raw data, performing per-90 normalisation to standardize stats regardless of game time.
 2.  **Clustering & Classification:** The ML model runs weighted K-Means to assign players to sub-roles based on their statistical output.
@@ -51,7 +51,7 @@ This project is built as a full-stack application with a focus on reproducibilit
 4.  **Algorithmic Scoring:** The backend calculates a composite score based on the weighted importance of specific stats for your chosen role (e.g., passing is weighted higher for a Deep Lying Playmaker).
 5.  **Recommendation:** The system returns a list of players that statistically match your criteria, achieving sub-second response times.
 
-## 💻 Usage
+##  Usage
 
 1.  Visit the [Live Website](https://flashdash101.github.io/football-suggest/).
 2.  Select a position (e.g., Midfielder).
@@ -59,7 +59,7 @@ This project is built as a full-stack application with a focus on reproducibilit
 4.  Choose a playing style (e.g., Creative).
 5.  Click **"Get Recommendations"** to see the scout report.
 
-## 🔜 Future Enhancements
+##  Future Enhancements
 *   Integration with real-time API feeds for match-day updates.
 *   Comparison tool to visualize two players head-to-head.
 *   Historical data analysis for longitudinal performance tracking.
@@ -67,6 +67,3 @@ This project is built as a full-stack application with a focus on reproducibilit
 ## 📄 License
 Open Source
 
-## 📧 Contact
-For inquiries regarding the engineering behind this project or collaboration opportunities, please contact:
-**adesina0202@gmail.com**
