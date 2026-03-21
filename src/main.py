@@ -1,8 +1,15 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from datahandler import player_data
-from Recommend import AdvancedPlayerRecommender
-from Models import RecommendationRequest, RecommendationResponse, PlayerRecommendation, PlayerStats
+try:
+    # Package-style imports for deployments like `uvicorn src.main:app`.
+    from .datahandler import player_data
+    from .Recommend import AdvancedPlayerRecommender
+    from .Models import RecommendationRequest, RecommendationResponse, PlayerRecommendation, PlayerStats
+except ImportError:
+    # Fallback for direct local execution from inside `src`.
+    from datahandler import player_data
+    from Recommend import AdvancedPlayerRecommender
+    from Models import RecommendationRequest, RecommendationResponse, PlayerRecommendation, PlayerStats
 
 app = FastAPI()
 

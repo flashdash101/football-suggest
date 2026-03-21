@@ -1,8 +1,12 @@
 from fastapi import FastAPI, HTTPException
-from datahandler import player_data
-from Recommend import AdvancedPlayerRecommender
-from Models import RecommendationRequest, RecommendationResponse, PlayerRecommendation, PlayerStats
-from datahandler import player_data
+try:
+    from .datahandler import player_data
+    from .Recommend import AdvancedPlayerRecommender
+    from .Models import RecommendationRequest, RecommendationResponse, PlayerRecommendation, PlayerStats
+except ImportError:
+    from datahandler import player_data
+    from Recommend import AdvancedPlayerRecommender
+    from Models import RecommendationRequest, RecommendationResponse, PlayerRecommendation, PlayerStats
 
 app = FastAPI()
 
