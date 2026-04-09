@@ -12,6 +12,9 @@ class AdvancedPlayerRecommender:
     def __init__(self, data):
         self.data = data
         self.scaler = RobustScaler()
+        #These are all the features provided in the datasets, They're all typically short for something.
+        #E.g. 'Gls' is short for Goals, 'SoT' is short for Shots on Target, 'Ast' is short for Asts and so on.
+        #This is useful for targeting specific niches of players and subniches.
         self.features = [ '90s', 'Gls', 'Sh', 'SoT', 'SoT%',
        'Sh/90', 'SoT/90', 'G/Sh', 'G/SoT', 'Dist', 'FK', 'PK', 'PKatt', 'xG',
        'npxG', 'npxG/Sh', 'G-xG', 'np:G-xG',  'onethird', 'A-xAG', 'Ast',
