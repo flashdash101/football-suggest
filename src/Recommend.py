@@ -1,12 +1,9 @@
 import numpy as np
-import pandas as pd
-import random
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import RobustScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances, manhattan_distances
-from scipy.stats import pearsonr
 
 class AdvancedPlayerRecommender:
     def __init__(self, data):
@@ -37,12 +34,13 @@ class AdvancedPlayerRecommender:
             'No Style': {}
         }
         
-        
+        # Define position-specific subcategories based on common football roles 
         self.subcategories = {
             'Defender': ['CB', 'FB', 'WB'],
             'Midfielder': ['DM', 'CM', 'AM'],
             'Forward': ['ST', 'W']
         }
+        # Weights for subcategory-specific features based on domain knowledge from my own football experience and analysis of player roles. These weights help the model focus on the most relevant stats for each type of player.
         self.role_features = {
             'CB': {'Tkl': 0.8, 'Int': 0.8, 'Clr': 0.6, 'Blocks': 0.8,   'Cmp': 0.7, 'TklW': 0.7, 'Def 3rd': 0.7},
             'FB': {'Tkl': 0.6, 'Int': 0.5, 'Pass': 0.5, 'PrgC': 0.7, 'PrgP': 0.7, 'Ast': 0.8, 'Clr': 0.5, 'Cmp': 0.6},
@@ -53,7 +51,7 @@ class AdvancedPlayerRecommender:
             'ST': {'Gls': 0.9, 'xG': 0.9, 'Sh': 0.7, 'SoT': 0.8, 'Ast': 0.6, 'xA': 0.5},
             'W': {'Ast': 0.8, 'xA': 1.1, 'PrgC': 0.85, 'Gls': 0.7, 'xG': 0.85, 'onethird': 0.8, 'Succ': 0.9, 'CPA': 0.75, 'Att': 0.9},
         }
-        
+        # These weights reflect the relative importance of each stat for the subcategory, based on domain knowledge and analysis of player profiles. They can be fine-tuned over time based on feedback and results.
         self.subcategory_weights = {
             'CB': {'Tkl': 0.8, 'Int': 0.8, 'Clr': 0.6, 'Blocks': 0.8,   'Cmp': 0.7, 'TklW': 0.7, 'Def 3rd': 0.7},
             'FB': {'Tkl': 0.6, 'Int': 0.5, 'Pass': 0.5, 'PrgC': 0.7, 'PrgP': 0.7, 'Ast': 0.8, 'Clr': 0.5, 'Cmp': 0.6},
@@ -170,6 +168,82 @@ class AdvancedPlayerRecommender:
     def euclidean_similarity(self, normalized_stats):
         distances = euclidean_distances(normalized_stats)
         return 1 / (1 + distances)
+
+    def _build_per90_view(self, frame, columns):
+        return frame.reindex(columns=columns, fill_value=0).div(frame['90s'], axis=0).replace([np.inf, -np.inf], np.nan).fillna(0)
+
+    def _build_weighted_recommendations(self, filtered_data, subcategory, playing_style, num_recommendations):
+        all_stats = self.features
+
+        for stat in all_stats:
+            if stat not in filtered_data.columns:
+                filtered_data[stat] = 0
+
+        stats_per_90 = self._build_per90_view(filtered_data, self.features)
+
+        scaler = StandardScaler()
+        normalized_stats = scaler.fit_transform(stats_per_90)
+
+        role_weights = np.array([self.role_features[subcategory].get(feat, 1.0) for feat in self.features])
+
+        if playing_style and playing_style != 'No Style':
+            style_bonuses = np.array([
+                max(0, self.playing_styles[playing_style].get(feat, 1.0) - 1.0)
+                for feat in self.features
+            ])
+            feature_weights = role_weights + style_bonuses
+
+            # DEBUG: Print weights for key stats
+            print(f"\n=== WEIGHTING DEBUG for {subcategory} with {playing_style} ===")
+            key_stats = ['Gls', 'xG', 'SoT', 'SoT%', 'Ast', 'xA', 'KP', 'PrgC']
+            for stat in key_stats:
+                if stat in self.features:
+                    idx = self.features.index(stat)
+                    print(f"{stat}: role={role_weights[idx]:.2f}, bonus={style_bonuses[idx]:.2f}, total={feature_weights[idx]:.2f}")
+            print(f"==========================================\n")
+        else:
+            feature_weights = role_weights
+
+        weighted_stats = normalized_stats * feature_weights
+        composite_scores = weighted_stats.sum(axis=1)
+
+        # Add controlled randomness for variety (±2-5% variation)
+        # This ensures slight variation between requests while keeping quality high
+        noise_level = 0.01 + (np.random.random() * 0.02)  # Random between 3-5%
+        noise = np.random.normal(0, noise_level, len(composite_scores))
+        composite_scores += noise
+
+        # Get top performers by composite score (with extra buffer for randomness)
+        # Pick from top (num_recommendations * 2) to increase variety
+        top_candidates = min(num_recommendations * 2, len(composite_scores))
+        candidate_indices = composite_scores.argsort()[::-1][:top_candidates]
+
+        # Randomly select from top candidates
+        np.random.shuffle(candidate_indices)
+        top_indices = candidate_indices[:num_recommendations]
+
+        # Use percentile-based normalization for better score distribution
+        # This prevents huge gaps between best and worst players
+        from scipy.stats import rankdata
+        ranks = rankdata(composite_scores, method='average')
+        percentile_scores = (ranks / len(ranks))  # 0 to 1 scale
+
+        # Scale to emphasize top performers (power transformation)
+        normalized_scores = percentile_scores ** 0.5  # Square root to compress low scores
+
+        recommendations = []
+        for idx in top_indices:
+            player_data = filtered_data.iloc[idx]
+            recommendations.append({
+                'Player': player_data['Player'],
+                'Pos': player_data['Pos'],
+                'Club': player_data['Club'],
+                'Similarity': float(normalized_scores[idx]),  # Now represents performance score
+                'SimilarityStd': 0.0,
+                **{stat: player_data[stat] for stat in all_stats}
+            })
+
+        return recommendations
     
     def get_recommendations_monte_carlo(self, category, subcategory=None, num_recommendations=5, min_minutes=450, num_simulations=1000, distance_metric='euclidean', playing_style='No Style'):
         category_mask = self.data['MainPos'].isin(self.position_categories[category])
@@ -184,7 +258,7 @@ class AdvancedPlayerRecommender:
 
         # Per-90 view for percentile-based filters
         per90_cols = ['xG', 'Gls', 'SoT', 'xA', 'Ast', 'KP', 'Carries', 'Succ', 'PrgC', 'Cmp', 'Touches', 'Tkl', 'Int', 'Tkl+Int', 'Att 3rd', 'Mid 3rd']
-        per90 = filtered_data[per90_cols].div(filtered_data['90s'], axis=0).replace([np.inf, -np.inf], np.nan).fillna(0)
+        per90 = self._build_per90_view(filtered_data, per90_cols)
 
         # PRE-FILTER by playing style thresholds to ensure quality matches
         initial_count = len(filtered_data)
@@ -335,85 +409,13 @@ class AdvancedPlayerRecommender:
         if len(filtered_data) < num_recommendations:
             raise ValueError(f"Not enough players meet the {playing_style} criteria. Found {len(filtered_data)}, need {num_recommendations}.")
 
-        all_stats = self.features
-        
-        for stat in all_stats:
-            if stat not in filtered_data.columns:
-                filtered_data[stat] = 0
-
-        stats_per_90 = filtered_data[self.features].div(filtered_data['90s'], axis=0)
-        stats_per_90 = stats_per_90.replace([np.inf, -np.inf], np.nan).fillna(0)
-
-        scaler = StandardScaler()
-        normalized_stats = scaler.fit_transform(stats_per_90)
-
-        # Apply feature weighting
         if subcategory:
-            role_weights = np.array([self.role_features[subcategory].get(feat, 1.0) for feat in self.features])
-            
-            if playing_style and playing_style != 'No Style':
-                style_bonuses = np.array([
-                    max(0, self.playing_styles[playing_style].get(feat, 1.0) - 1.0) 
-                    for feat in self.features
-                ])
-                feature_weights = role_weights + style_bonuses
-                
-                # DEBUG: Print weights for key stats
-                print(f"\n=== WEIGHTING DEBUG for {subcategory} with {playing_style} ===")
-                key_stats = ['Gls', 'xG', 'SoT', 'SoT%', 'Ast', 'xA', 'KP', 'PrgC']
-                for stat in key_stats:
-                    if stat in self.features:
-                        idx = self.features.index(stat)
-                        print(f"{stat}: role={role_weights[idx]:.2f}, bonus={style_bonuses[idx]:.2f}, total={feature_weights[idx]:.2f}")
-                print(f"==========================================\n")
-            else:
-                feature_weights = role_weights
-            
-            # Apply weights to stats
-            weighted_stats = normalized_stats * feature_weights
-            
-            # Calculate COMPOSITE SCORE instead of similarity
-            # Sum weighted stats for each player (higher = better)
-            composite_scores = weighted_stats.sum(axis=1)
-            
-            # Add controlled randomness for variety (±2-5% variation)
-            # This ensures slight variation between requests while keeping quality high
-            noise_level = 0.01 + (np.random.random() * 0.02)  # Random between 3-5%
-            noise = np.random.normal(0, noise_level, len(composite_scores))
-            composite_scores += noise
-            
-            # Get top performers by composite score (with extra buffer for randomness)
-            # Pick from top (num_recommendations * 2) to increase variety
-            top_candidates = min(num_recommendations * 2, len(composite_scores))
-            candidate_indices = composite_scores.argsort()[::-1][:top_candidates]
-            
-            # Randomly select from top candidates
-            np.random.shuffle(candidate_indices)
-            top_indices = candidate_indices[:num_recommendations]
-            
-            # Use percentile-based normalization for better score distribution
-            # This prevents huge gaps between best and worst players
-            from scipy.stats import rankdata
-            ranks = rankdata(composite_scores, method='average')
-            percentile_scores = (ranks / len(ranks))  # 0 to 1 scale
-            
-            # Scale to emphasize top performers (power transformation)
-            normalized_scores = percentile_scores ** 0.5  # Square root to compress low scores
-            
-            # Return recommendations
-            recommendations = []
-            for idx in top_indices:
-                player_data = filtered_data.iloc[idx]
-                recommendations.append({
-                    'Player': player_data['Player'],
-                    'Pos': player_data['Pos'],
-                    'Club': player_data['Club'],
-                    'Similarity': float(normalized_scores[idx]),  # Now represents performance score
-                    'SimilarityStd': 0.0,
-                    **{stat: player_data[stat] for stat in all_stats}
-                })
-
-            return recommendations
+            return self._build_weighted_recommendations(
+                filtered_data,
+                subcategory,
+                playing_style,
+                num_recommendations,
+            )
 
     def get_recommendations(self, category, subcategory=None, num_recommendations=5, min_minutes=0):
     # Filter by category
@@ -440,10 +442,7 @@ class AdvancedPlayerRecommender:
                 filtered_data[stat] = 0  # or np.nan if you prefer
 
         # Normalize stats by minutes played for similarity calculation
-        stats_per_90 = filtered_data[self.features].div(filtered_data['90s'], axis=0)
-
-        # Handle potential infinity values
-        stats_per_90 = stats_per_90.replace([np.inf, -np.inf], np.nan).fillna(0)
+        stats_per_90 = self._build_per90_view(filtered_data, self.features)
 
         # Normalize features to 0-1 range
         scaler = MinMaxScaler()
